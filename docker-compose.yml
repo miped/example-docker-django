@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:9.6.5
+    environment:
+      POSTGRES_USER: dockertest
+      POSTGRES_PASSWORD: dockertest
+      POSTGRES_DB: dockertest
+    volumes:
+      - .data/postgres:/var/lib/postgresql/data
+    ports:
+      - "54327:5432"
+
+  redis:
+    image: redis:3.2.11
+    command: redis-server --appendonly yes
+    volumes:
+      - .data/redis:/data
+    ports:
+      - "63797:6379"
+
+  web:
+    build: .
+    command: ./wait-for-it.sh postgres:5432 -- python manage.py runserver 0.0.0.0:8070
+    env_file:
+      - ./src/.env
+    volumes:
+      - .:/app
+    ports:
+      - "8070:8070"
+    links:
+      - redis
+      - postgres
+    restart: on-failure
